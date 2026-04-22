@@ -1,0 +1,112 @@
+[
+  {
+    "id": "s1",
+    "village": "Kadayam",
+    "lat": 9.1205,
+    "lng": 77.3982,
+    "need_type": "Food Supply",
+    "urgency": 9,
+    "families": 140,
+    "status": "open",
+    "created_at": "2024-03-01T08:00:00Z"
+  },
+  {
+    "id": "s2",
+    "village": "Sankarankovil",
+    "lat": 9.1721,
+    "lng": 77.5419,
+    "need_type": "Clean Water",
+    "urgency": 8,
+    "families": 210,
+    "status": "open",
+    "created_at": "2024-03-02T09:30:00Z"
+  },
+  {
+    "id": "s3",
+    "village": "Tenkasi",
+    "lat": 8.9594,
+    "lng": 77.3150,
+    "need_type": "Medical Aid",
+    "urgency": 7,
+    "families": 95,
+    "status": "open",
+    "created_at": "2024-03-03T10:00:00Z"
+  },
+  {
+    "id": "s4",
+    "village": "Alangulam",
+    "lat": 8.8678,
+    "lng": 77.4065,
+    "need_type": "Education",
+    "urgency": 5,
+    "families": 60,
+    "status": "assigned",
+    "created_at": "2024-03-04T11:00:00Z"
+  },
+  {
+    "id": "s5",
+    "village": "Sivagiri",
+    "lat": 9.0563,
+    "lng": 77.4325,
+    "need_type": "Sanitation",
+    "urgency": 6,
+    "families": 80,
+    "status": "open",
+    "created_at": "2024-03-05T08:30:00Z"
+  },
+  {
+    "id": "s6",
+    "village": "Puliyangudi",
+    "lat": 9.1765,
+    "lng": 77.3953,
+    "need_type": "Infrastructure",
+    "urgency": 4,
+    "families": 45,
+    "status": "open",
+    "created_at": "2024-03-06T09:00:00Z"
+  },
+  {
+    "id": "s7",
+    "village": "Rajapalayam",
+    "lat": 9.4534,
+    "lng": 77.5585,
+    "need_type": "Medical Aid",
+    "urgency": 9,
+    "families": 175,
+    "status": "open",
+    "created_at": "2024-03-07T07:45:00Z"
+  },
+  {
+    "id": "s8",
+    "village": "Srivilliputhur",
+    "lat": 9.5099,
+    "lng": 77.6352,
+    "need_type": "Clean Water",
+    "urgency": 3,
+    "families": 30,
+    "status": "resolved",
+    "created_at": "2024-03-08T10:15:00Z"
+  },
+  {
+    "id": "s9",
+    "village": "Kovilpatti",
+    "lat": 9.1728,
+    "lng": 77.8697,
+    "need_type": "Food Supply",
+    "urgency": 8,
+    "families": 160,
+    "status": "open",
+    "created_at": "2024-03-09T08:00:00Z"
+  },
+  {
+    "id": "s10",
+    "village": "Virudhunagar",
+    "lat": 9.5810,
+    "lng": 77.9624,
+    "need_type": "Education",
+    "urgency": 2,
+    "families": 22,
+    "status": "resolved",
+    "created_at": "2024-03-10T11:30:00Z"
+  }
+]
