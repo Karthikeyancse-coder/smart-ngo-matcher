@@ -408,12 +408,18 @@ export default function Landing() {
                   <X className="w-5 h-5" />
                 </button>
               </div>
-              <div className="aspect-video bg-nx-bg-elevated relative flex items-center justify-center overflow-hidden">
-                <img 
-                  src="/demo.webp" 
-                  alt="NexusAid Platform Demo Walkthrough"
+              <div className="aspect-video bg-black relative flex items-center justify-center overflow-hidden">
+                <video
+                  src="/demo.mp4"
+                  autoPlay
+                  loop
+                  muted
+                  playsInline
+                  controls
                   className="w-full h-full object-contain"
-                />
+                >
+                  Your browser does not support the video tag.
+                </video>
               </div>
             </motion.div>
           </div>
