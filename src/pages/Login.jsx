@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Target, ArrowRight, Mail, Lock, ShieldAlert, Eye, EyeOff } from 'lucide-react';
+import { Target, Mail, Lock, Eye, EyeOff, ShieldAlert, ArrowRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 
