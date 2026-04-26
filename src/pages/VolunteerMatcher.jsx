@@ -4,13 +4,6 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import fallbackSurveys from '../data/surveys.json';
 
-const MOCK_VOLUNTEERS = [
-  { id: 'v1', name: 'Dr. Aravind', role: 'Medical Specialist', distance: '2.4 km', rating: 4.9, completed: 34, availability: 'Available Now' },
-  { id: 'v2', name: 'Meena K.', role: 'Logistics Coordinator', distance: '5.1 km', rating: 4.7, completed: 12, availability: 'In 2 hours' },
-  { id: 'v3', name: 'Rescue Team Alpha', role: 'Heavy Equipment', distance: '8.0 km', rating: 5.0, completed: 108, availability: 'Available Now' },
-  { id: 'v4', name: 'Rajesh Kumar', role: 'General Volunteer', distance: '1.2 km', rating: 4.8, completed: 5, availability: 'Available Now' },
-];
-
 export default function VolunteerMatcher() {
   const [surveys, setSurveys] = useState([]);
   const [activeSurvey, setActiveSurvey] = useState(null);
@@ -33,21 +26,58 @@ export default function VolunteerMatcher() {
     fetchSurveys();
   }, []);
 
-  const runAiMatch = () => {
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // Radius of the earth in km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = 
+      Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+      Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    return R * c; 
+  };
+
+  const runAiMatch = async () => {
     setIsMatching(true);
     setMatches([]);
     
-    // Simulate AI processing delay
-    setTimeout(() => {
-      // Create mock match scores based on the active survey
-      const scored = MOCK_VOLUNTEERS.map(v => ({
-        ...v,
-        score: Math.floor(Math.random() * 20) + 75 // 75 - 95 score
-      })).sort((a,b) => b.score - a.score);
-      
-      setMatches(scored);
+    try {
+      const { data: volunteers, error } = await supabase.from('volunteers').select('*');
+      if (error) throw error;
+
+      const sLat = activeSurvey?.lat || 10.8505;
+      const sLng = activeSurvey?.lng || 76.2711;
+
+      const scored = volunteers.map(vol => {
+        const dist = calculateDistance(sLat, sLng, vol.lat, vol.lng);
+        
+        let score = 100 - (dist * 0.1); 
+        if (activeSurvey?.need_type === 'Medical Aid' && vol.role.includes('Medical')) score += 20;
+        if (activeSurvey?.need_type === 'Shelter' && vol.role.includes('Equipment')) score += 15;
+        if (activeSurvey?.need_type === 'Water' && vol.role.includes('Logistics')) score += 10;
+        
+        score = Math.min(99, Math.max(15, Math.floor(score)));
+
+        return {
+          ...vol,
+          distance: dist.toFixed(1) + ' km',
+          distVal: dist,
+          score
+        };
+      })
+      .filter(vol => vol.distVal < 2000) 
+      .sort((a,b) => b.score - a.score);
+
+      setTimeout(() => {
+        setMatches(scored);
+        setIsMatching(false);
+      }, 1500);
+
+    } catch (err) {
+      console.error("Failed to match volunteers:", err);
       setIsMatching(false);
-    }, 1500);
+    }
   };
 
   useEffect(() => {

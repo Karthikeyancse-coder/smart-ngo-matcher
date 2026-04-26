@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
-import { Search, X, ChevronRight, MapPin, Target } from 'lucide-react';
+import { Search, X, ChevronRight, ChevronLeft, MapPin, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 import { useTheme } from '../context/ThemeContext';
+import { useNavigate } from 'react-router-dom';
 import fallbackSurveys from '../data/surveys.json';
 
 export default function HeatMap() {
   const [surveys, setSurveys] = useState([]);
   const [activeSurvey, setActiveSurvey] = useState(null);
   const { isDark } = useTheme();
+  const navigate = useNavigate();
 
   // Filter states
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategories, setSelectedCategories] = useState([]);
   const [minUrgency, setMinUrgency] = useState(1);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState(false);
 
   // Computed filtered surveys
   const filteredSurveys = surveys.filter(survey => {
@@ -108,11 +111,30 @@ export default function HeatMap() {
         </div>
       </div>
 
-      {/* LEFT FILTER PANEL (Floating) */}
-      <motion.div 
-        initial={{ x: -20, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        className="absolute top-24 left-6 z-[400] w-80 bg-nx-bg-surface/90 backdrop-blur-md border border-nx-border-default rounded-2xl shadow-modal p-5 flex flex-col max-h-[calc(100vh-140px)]"
+      {/* Mobile Filter Backdrop */}
+      <AnimatePresence>
+        {isMobileFilterOpen && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileFilterOpen(false)}
+            className="md:hidden absolute inset-0 bg-nx-bg-base/80 backdrop-blur-sm z-[399]"
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Mobile Filter Toggle */}
+      <button 
+        onClick={() => setIsMobileFilterOpen(!isMobileFilterOpen)}
+        className={`md:hidden absolute top-1/2 -translate-y-1/2 z-[401] flex items-center justify-center w-8 h-16 bg-nx-bg-surface/90 backdrop-blur-md border border-l-0 border-nx-border-default rounded-r-2xl shadow-[0_0_15px_rgba(59,130,246,0.3)] text-nx-accent-primary transition-transform duration-300 ease-in-out ${isMobileFilterOpen ? 'translate-x-[85vw]' : 'translate-x-0'}`}
+      >
+        {isMobileFilterOpen ? <ChevronLeft className="w-5 h-5" /> : <ChevronRight className="w-5 h-5 animate-pulse" />}
+      </button>
+
+      {/* LEFT FILTER PANEL */}
+      <div 
+        className={`absolute top-0 md:top-24 left-0 md:left-6 z-[400] h-full md:h-auto w-[85vw] md:w-80 bg-nx-bg-surface/90 backdrop-blur-md border-r md:border border-nx-border-default md:rounded-2xl shadow-modal p-5 flex flex-col md:max-h-[calc(100vh-140px)] transition-transform duration-300 ease-in-out md:translate-x-0 ${isMobileFilterOpen ? 'translate-x-0' : '-translate-x-full'}`}
       >
         <div className="flex items-center justify-between mb-6 pb-4 border-b border-nx-border-subtle">
           <h2 className="text-lg font-display font-bold text-nx-text-primary flex items-center gap-2">
@@ -170,7 +192,7 @@ export default function HeatMap() {
             Apply Filters
           </button>
         </div>
-      </motion.div>
+      </div>
 
       {/* RIGHT DETAIL PANEL (Slide-in) */}
       <AnimatePresence>
@@ -250,7 +272,10 @@ export default function HeatMap() {
             </div>
 
             <div className="p-4 border-t border-nx-border-strong bg-nx-bg-base/80 backdrop-blur">
-              <button className="w-full py-3 bg-nx-accent-primary hover:bg-nx-accent-hover text-white rounded-lg font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2">
+              <button 
+                onClick={() => navigate('/match')}
+                className="w-full py-3 bg-nx-accent-primary hover:bg-nx-accent-hover text-white rounded-lg font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2 hover:shadow-glow active:scale-95"
+              >
                 Find Volunteers <ChevronRight className="w-4 h-4" />
               </button>
             </div>

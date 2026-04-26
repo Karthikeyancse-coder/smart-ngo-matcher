@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 
@@ -24,21 +24,29 @@ function PageLoader() {
   );
 }
 
+function ProtectedRoute({ children }) {
+  const isAuth = localStorage.getItem('isAuthenticated') === 'true';
+  if (!isAuth) {
+    return <Navigate to="/login" replace />;
+  }
+  return children;
+}
+
 export default function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
-        <div className="min-h-screen bg-nx-bg-base text-nx-text-primary transition-colors duration-300 font-body">
+        <div className="min-h-screen bg-nx-bg-base text-nx-text-primary transition-colors duration-300 font-body pb-20 md:pb-0">
           <Navbar />
           <Suspense fallback={<PageLoader />}>
             <Routes>
               <Route path="/"          element={<Landing />} />
               <Route path="/login"     element={<Login />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/map"       element={<HeatMap />} />
-              <Route path="/upload"    element={<UploadSurvey />} />
-              <Route path="/match"     element={<VolunteerMatcher />} />
-              <Route path="/reports"   element={<Reports />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/map"       element={<ProtectedRoute><HeatMap /></ProtectedRoute>} />
+              <Route path="/upload"    element={<ProtectedRoute><UploadSurvey /></ProtectedRoute>} />
+              <Route path="/match"     element={<ProtectedRoute><VolunteerMatcher /></ProtectedRoute>} />
+              <Route path="/reports"   element={<ProtectedRoute><Reports /></ProtectedRoute>} />
               <Route path="*"          element={<NotFound />} />
             </Routes>
           </Suspense>

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from 'react';
-import { motion, useScroll, useTransform, useInView } from 'framer-motion';
+import { motion, useScroll, useTransform, useInView, AnimatePresence } from 'framer-motion';
 import { NavLink } from 'react-router-dom';
-import { ArrowRight, PlayCircle, Layers, Users, Zap, FileText, CheckCircle2, Bot, Map as MapIcon, BarChart3, MessageSquare, Diamond, UploadCloud } from 'lucide-react';
+import { ArrowRight, PlayCircle, Layers, Users, Zap, FileText, CheckCircle2, Bot, Map as MapIcon, BarChart3, MessageSquare, Diamond, UploadCloud, X } from 'lucide-react';
 
 const ParticleBackground = () => {
   const canvasRef = useRef(null);
@@ -101,6 +101,7 @@ const SectionHeading = ({ pretitle, title, description }) => (
 );
 
 export default function Landing() {
+  const [isVideoOpen, setIsVideoOpen] = React.useState(false);
   const { scrollY } = useScroll();
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
   const dashboardY = useTransform(scrollY, [0, 600], [0, -100]);
@@ -150,10 +151,10 @@ export default function Landing() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16"
           >
             <NavLink to="/login" className="h-14 px-8 bg-nx-accent-primary hover:bg-nx-accent-hover text-white rounded-lg font-medium text-lg flex items-center gap-2 transition-all hover:-translate-y-1 hover:shadow-glow active:scale-95">
-              Start for free <ArrowRight className="w-5 h-5" />
+              Enter Platform <ArrowRight className="w-5 h-5" />
             </NavLink>
-            <button className="h-14 px-8 bg-nx-bg-surface border border-nx-border-default hover:bg-nx-bg-elevated text-nx-text-primary rounded-lg font-medium text-lg flex items-center gap-2 transition-all hover:-translate-y-1 active:scale-95">
-              <PlayCircle className="w-5 h-5 text-nx-text-secondary" /> Watch demo
+            <button onClick={() => setIsVideoOpen(true)} className="h-14 px-8 bg-nx-bg-surface border border-nx-border-default hover:bg-nx-bg-elevated text-nx-text-primary rounded-lg font-medium text-lg flex items-center gap-2 transition-all hover:-translate-y-1 active:scale-95">
+              <PlayCircle className="w-5 h-5 text-nx-text-secondary" /> How it works
             </button>
           </motion.div>
 
@@ -235,7 +236,7 @@ export default function Landing() {
       </section>
 
       {/* 3. PROBLEM SECTION */}
-      <section className="py-32 container mx-auto px-6">
+      <section id="features" className="py-32 container mx-auto px-6">
         <div className="grid md:grid-cols-2 gap-16 items-start">
           <SectionHeading 
             pretitle="The broken status quo"
@@ -271,7 +272,7 @@ export default function Landing() {
       </section>
 
       {/* 4. SOLUTION SECTION */}
-      <section className="py-32 bg-nx-bg-surface border-y border-nx-border-subtle relative overflow-hidden">
+      <section id="how-it-works" className="py-32 bg-nx-bg-surface border-y border-nx-border-subtle relative overflow-hidden">
         <div className="absolute right-0 top-0 w-[800px] h-[800px] bg-nx-accent-primary/5 rounded-full blur-[120px] pointer-events-none" />
         <div className="container mx-auto px-6 relative z-10">
           <SectionHeading 
@@ -315,8 +316,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* 5. IMPACT NUMBERS */}
-      <section className="py-32 container mx-auto px-6 border-b border-nx-border-subtle">
+      {/* 5. IMPACT METRICS */}
+      <section id="impact" className="py-32 container mx-auto px-6 border-b border-nx-border-subtle">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-4 divide-x divide-nx-border-subtle">
           {[
             { val: "247", sfx: "K", label: "Families Helped" },
@@ -377,6 +378,47 @@ export default function Landing() {
           100% { transform: translateX(-50%); }
         }
       `}</style>
+
+      {/* Video Modal */}
+      <AnimatePresence>
+        {isVideoOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
+            <motion.div 
+              initial={{ opacity: 0 }} 
+              animate={{ opacity: 1 }} 
+              exit={{ opacity: 0 }} 
+              className="absolute inset-0 bg-nx-bg-base/90 backdrop-blur-sm cursor-pointer"
+              onClick={() => setIsVideoOpen(false)}
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative w-full max-w-5xl bg-nx-bg-surface border border-nx-border-strong rounded-2xl shadow-modal overflow-hidden z-10"
+            >
+              <div className="flex items-center justify-between p-4 border-b border-nx-border-subtle bg-nx-bg-elevated/50">
+                <div className="flex items-center gap-2">
+                  <PlayCircle className="w-5 h-5 text-nx-accent-primary" />
+                  <span className="font-bold text-nx-text-primary">NexusAid Platform Overview</span>
+                </div>
+                <button 
+                  onClick={() => setIsVideoOpen(false)}
+                  className="p-2 rounded-lg text-nx-text-secondary hover:text-nx-crimson hover:bg-nx-crimson-subtle transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="aspect-video bg-nx-bg-elevated relative flex items-center justify-center overflow-hidden">
+                <img 
+                  src="/demo.webp" 
+                  alt="NexusAid Platform Demo Walkthrough"
+                  className="w-full h-full object-contain"
+                />
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
