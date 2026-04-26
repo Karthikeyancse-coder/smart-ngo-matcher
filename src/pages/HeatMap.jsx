@@ -4,11 +4,32 @@ import 'leaflet/dist/leaflet.css';
 import { Search, X, ChevronRight, MapPin, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
+import { useTheme } from '../context/ThemeContext';
 import fallbackSurveys from '../data/surveys.json';
 
 export default function HeatMap() {
   const [surveys, setSurveys] = useState([]);
   const [activeSurvey, setActiveSurvey] = useState(null);
+  const { isDark } = useTheme();
+
+  // Filter states
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [minUrgency, setMinUrgency] = useState(1);
+
+  // Computed filtered surveys
+  const filteredSurveys = surveys.filter(survey => {
+    const matchesSearch = !searchQuery || 
+      survey.village.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      survey.district.toLowerCase().includes(searchQuery.toLowerCase()) || 
+      survey.need_type.toLowerCase().includes(searchQuery.toLowerCase());
+    
+    const matchesCategory = selectedCategories.length === 0 || selectedCategories.includes(survey.need_type);
+    
+    const matchesUrgency = survey.urgency >= minUrgency;
+
+    return matchesSearch && matchesCategory && matchesUrgency;
+  });
   
   useEffect(() => {
     async function fetchSurveys() {
@@ -37,16 +58,19 @@ export default function HeatMap() {
         <MapContainer 
           center={[10.8505, 76.2711]} // approximate Tamil Nadu center
           zoom={7} 
-          style={{ height: '100%', width: '100%', background: '#040812' }}
+          style={{ height: '100%', width: '100%', background: isDark ? '#040812' : '#ffffff' }}
           zoomControl={false}
         >
-          {/* CartoDB DarkMatter TileLayer */}
+          {/* CartoDB TileLayer based on Theme */}
           <TileLayer
-            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            url={isDark 
+              ? "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+              : "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png"
+            }
             attribution='&copy; OpenStreetMap contributors &copy; CARTO'
           />
 
-          {surveys.map((survey) => (
+          {filteredSurveys.map((survey) => (
             <CircleMarker
               key={survey.id}
               center={[survey.lat, survey.lng]}
@@ -74,7 +98,13 @@ export default function HeatMap() {
       <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[400] w-full max-w-md px-4">
         <div className="bg-nx-bg-surface/90 backdrop-blur-md border border-nx-border-default rounded-xl shadow-modal flex items-center px-4 py-3">
           <Search className="w-5 h-5 text-nx-text-tertiary" />
-          <input type="text" placeholder="Search village, district, need type..." className="bg-transparent border-none outline-none text-nx-text-primary text-sm flex-1 ml-3 placeholder:text-nx-text-disabled" />
+          <input 
+            type="text" 
+            placeholder="Search village, district, need type..." 
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="bg-transparent border-none outline-none text-nx-text-primary text-sm flex-1 ml-3 placeholder:text-nx-text-disabled" 
+          />
         </div>
       </div>
 
@@ -89,7 +119,7 @@ export default function HeatMap() {
             <Target className="w-5 h-5 text-nx-accent-primary" /> Intelligence
           </h2>
           <span className="text-xs font-mono bg-nx-bg-elevated px-2 py-1 rounded text-nx-text-secondary">
-            {surveys.length} NEEDS
+            {filteredSurveys.length} NEEDS
           </span>
         </div>
         
@@ -98,9 +128,20 @@ export default function HeatMap() {
           <div>
             <h3 className="text-xs font-bold text-nx-text-secondary uppercase tracking-widest mb-3">Categories</h3>
             <div className="space-y-2">
-              {['Water', 'Health', 'Education', 'Food'].map(c => (
+              {['Water', 'Health', 'Education', 'Food', 'Medical Aid', 'Shelter', 'Heavy Eqpt'].map(c => (
                 <label key={c} className="flex items-center gap-3 cursor-pointer">
-                  <div className="w-4 h-4 rounded border border-nx-border-strong bg-nx-bg-elevated checked:bg-nx-accent-primary" />
+                  <input 
+                    type="checkbox"
+                    checked={selectedCategories.includes(c)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setSelectedCategories([...selectedCategories, c]);
+                      } else {
+                        setSelectedCategories(selectedCategories.filter(cat => cat !== c));
+                      }
+                    }}
+                    className="w-4 h-4 rounded border border-nx-border-strong bg-nx-bg-elevated text-nx-accent-primary focus:ring-nx-accent-primary accent-nx-accent-primary cursor-pointer" 
+                  />
                   <span className="text-sm text-nx-text-primary">{c}</span>
                 </label>
               ))}
@@ -109,8 +150,18 @@ export default function HeatMap() {
           
           {/* Urgency */}
           <div>
-            <h3 className="text-xs font-bold text-nx-text-secondary uppercase tracking-widest mb-3">Urgency Level</h3>
-            <input type="range" min="1" max="10" className="w-full accent-nx-accent-primary" />
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-xs font-bold text-nx-text-secondary uppercase tracking-widest">Urgency Level</h3>
+              <span className="text-xs font-mono text-nx-text-primary">{minUrgency}+</span>
+            </div>
+            <input 
+              type="range" 
+              min="1" 
+              max="10" 
+              value={minUrgency}
+              onChange={(e) => setMinUrgency(Number(e.target.value))}
+              className="w-full accent-nx-accent-primary" 
+            />
           </div>
         </div>
 

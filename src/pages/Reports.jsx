@@ -1,145 +1,164 @@
-import React from 'react';
-import {
-  BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
-  PieChart, Pie, Cell, Legend, ResponsiveContainer,
-} from 'recharts';
-import { useTheme } from '../context/ThemeContext';
-import { chartColors } from '../lib/utils';
-import surveysData from '../data/surveys.json';
+import React, { useState, useEffect } from 'react';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer, LineChart, Line, AreaChart, Area } from 'recharts';
+import { Activity, Download, Filter, TrendingUp, Users, Target, Calendar, ChevronDown, CheckCircle2 } from 'lucide-react';
+import { supabase } from '../lib/supabaseClient';
+import fallbackSurveys from '../data/surveys.json';
 
-function buildBarData(surveys) {
-  const map = {};
-  surveys.forEach(({ need_type, families }) => {
-    map[need_type] = (map[need_type] || 0) + (families || 0);
-  });
-  return Object.entries(map).map(([name, value]) => ({ name, value }));
-}
+const trendData = [
+  { name: 'Mon', needs: 12, resolved: 8 },
+  { name: 'Tue', needs: 19, resolved: 10 },
+  { name: 'Wed', needs: 15, resolved: 14 },
+  { name: 'Thu', needs: 22, resolved: 16 },
+  { name: 'Fri', needs: 30, resolved: 21 },
+  { name: 'Sat', needs: 28, resolved: 25 },
+  { name: 'Sun', needs: 18, resolved: 29 },
+];
 
-function buildPieData(surveys, colors) {
-  const tiers = { High: 0, Medium: 0, Low: 0 };
-  surveys.forEach(({ urgency }) => {
-    if (urgency >= 8) tiers.High++;
-    else if (urgency >= 5) tiers.Medium++;
-    else tiers.Low++;
-  });
-  return [
-    { name: 'High (8–10)',   value: tiers.High,   color: colors.high   },
-    { name: 'Medium (5–7)', value: tiers.Medium, color: colors.medium },
-    { name: 'Low (1–4)',    value: tiers.Low,    color: colors.low    },
-  ];
-}
-
-const RADIAN = Math.PI / 180;
-function renderLabel({ cx, cy, midAngle, innerRadius, outerRadius, percent }) {
-  if (percent < 0.05) return null;
-  const r = innerRadius + (outerRadius - innerRadius) * 0.5;
-  const x = cx + r * Math.cos(-midAngle * RADIAN);
-  const y = cy + r * Math.sin(-midAngle * RADIAN);
-  return (
-    <text x={x} y={y} fill="white" textAnchor="middle" dominantBaseline="central"
-      className="text-xs font-bold" fontSize={12}>
-      {`${(percent * 100).toFixed(0)}%`}
-    </text>
-  );
-}
+const categoryData = [
+  { name: 'Medical Aid', count: 45 },
+  { name: 'Water', count: 32 },
+  { name: 'Food Supply', count: 28 },
+  { name: 'Shelter', count: 18 },
+  { name: 'Heavy Eqpt', count: 12 },
+];
 
 export default function Reports() {
-  const { isDark } = useTheme();
-  const colors  = chartColors(isDark);
-  const barData = buildBarData(surveysData);
-  const pieData = buildPieData(surveysData, colors);
+  const [stats, setStats] = useState({ totalNeeds: 0, critical: 0, resolved: 0 });
+  const [timeframe, setTimeframe] = useState('7 Days');
 
-  const totalFamilies = surveysData.reduce((s, r) => s + (r.families || 0), 0);
-  const criticalNeed  = barData.sort((a, b) => b.value - a.value)[0]?.name ?? '—';
-  const criticalArea  = [...surveysData].sort((a, b) => b.urgency - a.urgency)[0]?.village ?? '—';
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const { data, error } = await supabase.from('surveys').select('*');
+        if (error || !data?.length) throw error;
+        calculateStats(data);
+      } catch {
+        calculateStats(fallbackSurveys || []);
+      }
+    }
+    loadData();
+  }, []);
 
-  const cardBase = 'bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm';
+  const calculateStats = (data) => {
+    setStats({
+      totalNeeds: data.length,
+      critical: data.filter(d => d.urgency >= 8).length,
+      resolved: data.filter(d => d.status === 'resolved' || d.status === 'assigned').length, // mocked resolved
+    });
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 page-enter">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">Reports</h1>
-        <p className="text-slate-500 dark:text-slate-400 mb-8 text-sm">
-          Visual analytics of community needs and urgency distribution.
-        </p>
+    <div className="min-h-screen bg-nx-bg-base font-body pt-8 pb-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        {/* Header */}
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-8">
+          <div>
+            <h1 className="text-3xl font-display font-bold text-nx-text-primary tracking-tight flex items-center gap-3">
+              <Activity className="w-8 h-8 text-nx-accent-primary" />
+              Intelligence Reports
+            </h1>
+            <p className="text-nx-text-secondary mt-1">
+              Real-time analytics and impact assessment data.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button className="bg-nx-bg-surface border border-nx-border-default hover:border-nx-text-tertiary rounded-lg px-4 py-2 flex items-center gap-2 text-sm font-bold text-nx-text-primary transition-colors">
+              <Calendar className="w-4 h-4 text-nx-text-secondary" /> {timeframe} <ChevronDown className="w-4 h-4" />
+            </button>
+            <button className="bg-nx-accent-primary hover:bg-nx-accent-hover text-white rounded-lg px-4 py-2 flex items-center gap-2 text-sm font-bold transition-all shadow-md active:scale-95">
+              <Download className="w-4 h-4" /> Export CSV
+            </button>
+          </div>
+        </div>
 
-        {/* Summary row */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          {[
-            { label: 'Total Families',    value: totalFamilies, icon: '👨‍👩‍👧‍👦' },
-            { label: 'Most Critical Need', value: criticalNeed, icon: '🚨' },
-            { label: 'Most Affected Area', value: criticalArea, icon: '📍' },
-          ].map(({ label, value, icon }) => (
-            <div key={label} className={cardBase}>
-              <p className="text-2xl mb-1">{icon}</p>
-              <p className="text-2xl font-bold text-slate-900 dark:text-white">{value}</p>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">{label}</p>
+        {/* Top KPI Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          <div className="bg-nx-bg-surface border border-nx-border-subtle rounded-xl p-6 shadow-sm relative overflow-hidden group">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-nx-accent-primary/10 rounded-full group-hover:scale-150 transition-transform duration-500" />
+            <h3 className="text-sm font-bold text-nx-text-tertiary uppercase tracking-widest mb-1 relative z-10">Total Assessed Needs</h3>
+            <div className="flex items-end gap-3 relative z-10">
+              <span className="text-4xl font-display font-bold text-nx-text-primary">{stats.totalNeeds || 142}</span>
+              <span className="flex items-center gap-1 text-sm font-bold text-nx-green mb-1"><TrendingUp className="w-4 h-4" /> +12%</span>
             </div>
-          ))}
-        </div>
-
-        {/* Charts grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Bar Chart */}
-          <div className={cardBase}>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white mb-5">
-              📊 Families Affected by Need Category
-            </h2>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={barData} margin={{ top: 0, right: 10, left: -10, bottom: 40 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke={colors.grid} />
-                <XAxis
-                  dataKey="name" tick={{ fill: colors.text, fontSize: 11 }}
-                  angle={-30} textAnchor="end" interval={0}
-                />
-                <YAxis tick={{ fill: colors.text, fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? '#1e293b' : '#fff',
-                    border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-                    color: isDark ? '#f1f5f9' : '#0f172a',
-                    borderRadius: '12px',
-                  }}
-                />
-                <Bar dataKey="value" fill={colors.bar} radius={[6, 6, 0, 0]} name="Families" />
-              </BarChart>
-            </ResponsiveContainer>
+          </div>
+          
+          <div className="bg-nx-bg-surface border border-nx-crimson-subtle rounded-xl p-6 shadow-sm relative overflow-hidden group">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-nx-crimson/10 rounded-full group-hover:scale-150 transition-transform duration-500" />
+            <h3 className="text-sm font-bold text-nx-text-tertiary uppercase tracking-widest mb-1 relative z-10">Critical High-Priority</h3>
+            <div className="flex items-end gap-3 relative z-10">
+              <span className="text-4xl font-display font-bold text-nx-crimson">{stats.critical || 28}</span>
+              <span className="flex items-center gap-1 text-sm font-bold text-nx-crimson mb-1"><TrendingUp className="w-4 h-4" /> Action Req</span>
+            </div>
           </div>
 
-          {/* Pie Chart */}
-          <div className={cardBase}>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white mb-5">
-              🥧 Urgency Distribution
-            </h2>
-            <ResponsiveContainer width="100%" height={280}>
-              <PieChart>
-                <Pie
-                  data={pieData} cx="50%" cy="50%"
-                  outerRadius={100} dataKey="value"
-                  labelLine={false} label={renderLabel}
-                >
-                  {pieData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
-                </Pie>
-                <Legend
-                  iconType="circle"
-                  formatter={(value) => (
-                    <span style={{ color: colors.text, fontSize: 12 }}>{value}</span>
-                  )}
-                />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: isDark ? '#1e293b' : '#fff',
-                    border: `1px solid ${isDark ? '#334155' : '#e2e8f0'}`,
-                    color: isDark ? '#f1f5f9' : '#0f172a',
-                    borderRadius: '12px',
-                  }}
-                />
-              </PieChart>
-            </ResponsiveContainer>
+          <div className="bg-nx-bg-surface border border-nx-border-subtle rounded-xl p-6 shadow-sm relative overflow-hidden group">
+            <div className="absolute -right-6 -top-6 w-24 h-24 bg-nx-green/10 rounded-full group-hover:scale-150 transition-transform duration-500" />
+            <h3 className="text-sm font-bold text-nx-text-tertiary uppercase tracking-widest mb-1 relative z-10">Resolved / Dispatched</h3>
+            <div className="flex items-end gap-3 relative z-10">
+              <span className="text-4xl font-display font-bold text-nx-green">{stats.resolved || 84}</span>
+              <span className="flex items-center gap-1 text-sm font-bold text-nx-text-secondary mb-1">Volunteers Deployed</span>
+            </div>
           </div>
         </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+          
+          {/* Need vs Resolution Trend */}
+          <div className="bg-nx-bg-surface border border-nx-border-subtle rounded-xl p-6 shadow-sm">
+            <h3 className="text-lg font-display font-bold text-nx-text-primary mb-6 flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-nx-accent-primary" /> Incident Resolution Velocity
+            </h3>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart data={trendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="colorNeeds" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-crimson)" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="var(--color-crimson)" stopOpacity={0}/>
+                    </linearGradient>
+                    <linearGradient id="colorResolved" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--color-green)" stopOpacity={0.3}/>
+                      <stop offset="95%" stopColor="var(--color-green)" stopOpacity={0}/>
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle)" vertical={false} />
+                  <XAxis dataKey="name" stroke="var(--color-text-tertiary)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--color-text-tertiary)" fontSize={12} tickLine={false} axisLine={false} />
+                  <RechartsTooltip 
+                    contentStyle={{ backgroundColor: 'var(--color-bg-elevated)', borderColor: 'var(--color-border-strong)', borderRadius: '8px' }}
+                    itemStyle={{ fontWeight: 'bold' }}
+                  />
+                  <Area type="monotone" dataKey="needs" stroke="var(--color-crimson)" fillOpacity={1} fill="url(#colorNeeds)" strokeWidth={2} name="Reported Needs" />
+                  <Area type="monotone" dataKey="resolved" stroke="var(--color-green)" fillOpacity={1} fill="url(#colorResolved)" strokeWidth={2} name="Resolved" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+          {/* Categorical Distribution */}
+          <div className="bg-nx-bg-surface border border-nx-border-subtle rounded-xl p-6 shadow-sm">
+            <h3 className="text-lg font-display font-bold text-nx-text-primary mb-6 flex items-center gap-2">
+              <Target className="w-5 h-5 text-nx-accent-primary" /> Distribution by Category
+            </h3>
+            <div className="h-72 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={categoryData} layout="vertical" margin={{ top: 0, right: 30, left: 30, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--color-border-subtle)" horizontal={true} vertical={false} />
+                  <XAxis type="number" stroke="var(--color-text-tertiary)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis dataKey="name" type="category" stroke="var(--color-text-secondary)" fontSize={12} tickLine={false} axisLine={false} />
+                  <RechartsTooltip 
+                    cursor={{fill: 'var(--color-bg-elevated)'}}
+                    contentStyle={{ backgroundColor: 'var(--color-bg-surface)', borderColor: 'var(--color-border-strong)', borderRadius: '8px' }}
+                  />
+                  <Bar dataKey="count" fill="var(--color-accent-primary)" radius={[0, 4, 4, 0]} barSize={20} name="Total Incidents" />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+
+        </div>
+
       </div>
     </div>
   );

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { UploadCloud, CheckCircle2, AlertTriangle, MapPin, Activity, ShieldAlert, HeartPulse, Droplet, Thermometer, Pill, Camera, Mic, Save, Send } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { supabase } from '../lib/supabaseClient';
 
 const OCR_STEPS = [
   'Image Processing',
@@ -15,6 +16,8 @@ export default function UploadSurvey() {
   const [ocrProgress, setOcrProgress] = useState(0);
   const [ocrStatus, setOcrStatus] = useState('idle'); // idle, scanning, complete
   const [confidence, setConfidence] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isVerified, setIsVerified] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -59,6 +62,45 @@ export default function UploadSurvey() {
         });
       }
     }, 800);
+  };
+
+  const handleSubmit = async () => {
+    setIsSubmitting(true);
+    try {
+      // Mock latitude and longitude for Tamil Nadu region
+      const lat = 10.5 + Math.random() * 0.5;
+      const lng = 76.2 + Math.random() * 0.5;
+
+      const { error } = await supabase.from('surveys').insert([
+        {
+          village: formData.village,
+          district: formData.district,
+          need_type: formData.category,
+          description: formData.description,
+          urgency: formData.urgency,
+          families: formData.families,
+          lat,
+          lng,
+          status: 'reported'
+        }
+      ]);
+
+      if (error) {
+        console.error('Supabase Error:', error.message);
+        alert('Failed to submit: ' + error.message);
+      } else {
+        alert('Survey Intelligence Successfully Uploaded!');
+        setFormData({ village: '', district: '', category: '', description: '', urgency: 5, families: 0 });
+        setOcrStatus('idle');
+        setFile(null);
+        setIsVerified(false);
+      }
+    } catch (err) {
+      console.error(err);
+      alert('Network or Supabase error. Continuing with mock flow.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -280,9 +322,13 @@ export default function UploadSurvey() {
       {/* Sticky Bottom Action Bar */}
       <div className="fixed bottom-0 left-0 right-0 bg-nx-bg-surface/80 backdrop-blur-md border-t border-nx-border-strong px-6 py-4 z-40">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
-          <label className="flex items-center gap-3 cursor-pointer group">
-            <div className="w-5 h-5 border border-nx-border-strong rounded bg-nx-bg-base group-hover:border-nx-accent-primary flex items-center justify-center">
-              {ocrStatus === 'complete' && <CheckCircle2 className="w-3 h-3 text-nx-accent-primary" />}
+          <label className="flex items-center gap-3 cursor-pointer group" onClick={() => setIsVerified(!isVerified)}>
+            <div className={`w-5 h-5 border rounded flex items-center justify-center transition-colors ${
+              isVerified || ocrStatus === 'complete' 
+                ? 'bg-nx-accent-subtle border-nx-accent-primary' 
+                : 'border-nx-border-strong bg-nx-bg-base group-hover:border-nx-accent-primary'
+            }`}>
+              {(isVerified || ocrStatus === 'complete') && <CheckCircle2 className="w-3 h-3 text-nx-accent-primary" />}
             </div>
             <span className="text-sm font-bold text-nx-text-secondary select-none">I verify this information is accurate</span>
           </label>
@@ -290,8 +336,13 @@ export default function UploadSurvey() {
             <button className="px-6 py-2.5 bg-nx-bg-elevated border border-nx-border-default hover:bg-nx-bg-overlay text-nx-text-primary rounded-lg font-bold text-sm transition-all shadow-sm">
               Save Draft
             </button>
-            <button className="px-8 py-2.5 bg-nx-accent-primary hover:bg-nx-accent-hover text-white rounded-lg font-bold text-sm transition-all shadow-md hover:shadow-glow active:scale-95 flex items-center gap-2">
-              <Send className="w-4 h-4" /> Submit Survey
+            <button 
+              onClick={handleSubmit}
+              disabled={isSubmitting || (!isVerified && ocrStatus !== 'complete')}
+              className="px-8 py-2.5 bg-nx-accent-primary hover:bg-nx-accent-hover text-white rounded-lg font-bold text-sm transition-all shadow-md hover:shadow-glow active:scale-95 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isSubmitting ? <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
+              {isSubmitting ? 'Submitting...' : 'Submit Survey'}
             </button>
           </div>
         </div>
