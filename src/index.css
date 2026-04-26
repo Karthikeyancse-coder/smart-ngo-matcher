@@ -1,6 +1,79 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer base {
+  :root {
+    --color-bg-base:        #040812;
+    --color-bg-surface:     #080f1f;
+    --color-bg-card:        #0c1628;
+    --color-bg-elevated:    #111d35;
+    --color-bg-overlay:     #192641;
+    
+    --color-border-subtle:  rgba(99,120,255,0.08);
+    --color-border-default: rgba(99,120,255,0.15);
+    --color-border-strong:  rgba(99,120,255,0.28);
+    
+    --color-text-primary:   #F0F4FF;
+    --color-text-secondary: #8B9EC7;
+    --color-text-tertiary:  #4A5B8A;
+    --color-text-disabled:  #2A3558;
+    
+    --color-accent-primary: #1D4ED8;
+    --color-accent-hover:   #2563EB;
+    --color-accent-subtle:  rgba(29,78,216,0.12);
+    
+    --color-cyan:           #06B6D4;
+    --color-cyan-subtle:    rgba(6,182,212,0.10);
+    --color-amber:          #F59E0B;
+    --color-amber-subtle:   rgba(245,158,11,0.10);
+    --color-crimson:        #DC2626;
+    --color-crimson-subtle: rgba(220,38,38,0.10);
+    --color-green:          #10B981;
+    --color-green-subtle:   rgba(16,185,129,0.10);
+    
+    --shadow-card:   0 1px 3px rgba(0,0,0,0.5), 0 0 0 1px var(--color-border-subtle);
+    --shadow-modal:  0 24px 64px rgba(0,0,0,0.6);
+    --shadow-glow:   0 0 40px rgba(29,78,216,0.15);
+    
+    --radius-sm:  6px;
+    --radius-md:  10px;
+    --radius-lg:  14px;
+    --radius-xl:  20px;
+    
+    --transition-fast:   150ms cubic-bezier(0.4,0,0.2,1);
+    --transition-normal: 250ms cubic-bezier(0.4,0,0.2,1);
+    --transition-slow:   400ms cubic-bezier(0.4,0,0.2,1);
+    
+    --font-display: 'Bricolage Grotesque', sans-serif;
+    --font-body:    'DM Sans', sans-serif;
+    --font-mono:    'JetBrains Mono', monospace;
+  }
+
+  [data-theme="light"], .light {
+    --color-bg-base:        #FAFAF7;
+    --color-bg-surface:     #F5F5F0;
+    --color-bg-card:        #FFFFFF;
+    --color-bg-elevated:    #FFFFFF;
+    --color-bg-overlay:     #F0EFE8;
+    
+    --color-border-subtle:  rgba(0,0,0,0.06);
+    --color-border-default: rgba(0,0,0,0.12);
+    --color-border-strong:  rgba(0,0,0,0.22);
+    
+    --color-text-primary:   #0A0F1E;
+    --color-text-secondary: #3D4D6E;
+    --color-text-tertiary:  #6B7A9E;
+    --color-text-disabled:  #9AAABF;
+    
+    --color-accent-subtle:  rgba(29,78,216,0.08);
+    --shadow-card:   0 1px 3px rgba(0,0,0,0.08), 0 0 0 1px var(--color-border-subtle);
+    --shadow-modal:  0 24px 64px rgba(0,0,0,0.15);
+    --shadow-glow:   0 0 40px rgba(29,78,216,0.08);
+  }
+}
 
 /* Smooth global transitions for theme switching */
 *, *::before, *::after {

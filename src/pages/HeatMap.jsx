@@ -1,38 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup } from 'react-leaflet';
+import 'leaflet/dist/leaflet.css';
+import { Search, X, ChevronRight, MapPin, Target } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
-import { mapMarkerColor, mapMarkerStroke, urgencyColor, urgencyLabel } from '../lib/utils';
-import { useTheme } from '../context/ThemeContext';
 import fallbackSurveys from '../data/surveys.json';
-
-const NEED_ICONS = {
-  'Clean Water': '💧', 'Medical Aid': '🏥', 'Education': '📚',
-  'Food Supply': '🍚', 'Sanitation': '🚿', 'Infrastructure': '🏗️',
-};
-
-function MapLegend() {
-  return (
-    <div className="absolute bottom-6 right-4 z-[999] bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 shadow-lg text-sm">
-      <p className="font-bold text-slate-900 dark:text-white mb-2 text-xs uppercase tracking-wide">Urgency</p>
-      {[
-        { label: 'High (8–10)',   color: '#f87171' },
-        { label: 'Medium (5–7)', color: '#f59e0b' },
-        { label: 'Low (1–4)',    color: '#34d399' },
-      ].map(({ label, color }) => (
-        <div key={label} className="flex items-center gap-2 mb-1.5 last:mb-0">
-          <span className="w-3 h-3 rounded-full shrink-0" style={{ backgroundColor: color }} />
-          <span className="text-slate-700 dark:text-slate-300 text-xs">{label}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
 
 export default function HeatMap() {
   const [surveys, setSurveys] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const { isDark } = useTheme();
-
+  const [activeSurvey, setActiveSurvey] = useState(null);
+  
   useEffect(() => {
     async function fetchSurveys() {
       try {
@@ -40,70 +17,214 @@ export default function HeatMap() {
         if (error || !data?.length) throw error;
         setSurveys(data);
       } catch {
-        setSurveys(fallbackSurveys);
-      } finally {
-        setLoading(false);
+        setSurveys(fallbackSurveys || []);
       }
     }
     fetchSurveys();
   }, []);
 
-  const tileUrl = isDark
-    ? 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png'
-    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+  const getUrgencyColor = (urgency) => {
+    if (urgency >= 8) return '#DC2626'; // crimson
+    if (urgency >= 5) return '#F59E0B'; // amber
+    return '#06B6D4'; // cyan
+  };
 
   return (
-    <div className="relative" style={{ height: 'calc(100vh - 64px)' }}>
-      {loading && (
-        <div className="absolute inset-0 z-[1000] flex items-center justify-center bg-slate-100 dark:bg-slate-900">
-          <div className="flex flex-col items-center gap-3">
-            <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin" />
-            <p className="text-slate-600 dark:text-slate-400 text-sm">Loading map data…</p>
+    <div className="relative w-full h-[calc(100vh-64px)] bg-nx-bg-base overflow-hidden font-body flex">
+      
+      {/* MAP LAYER */}
+      <div className="absolute inset-0 z-0">
+        <MapContainer 
+          center={[10.8505, 76.2711]} // approximate Tamil Nadu center
+          zoom={7} 
+          style={{ height: '100%', width: '100%', background: '#040812' }}
+          zoomControl={false}
+        >
+          {/* CartoDB DarkMatter TileLayer */}
+          <TileLayer
+            url="https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png"
+            attribution='&copy; OpenStreetMap contributors &copy; CARTO'
+          />
+
+          {surveys.map((survey) => (
+            <CircleMarker
+              key={survey.id}
+              center={[survey.lat, survey.lng]}
+              radius={Math.max(6, Math.min(24, survey.families / 10))}
+              pathOptions={{
+                color: getUrgencyColor(survey.urgency),
+                fillColor: getUrgencyColor(survey.urgency),
+                fillOpacity: 0.6,
+                weight: survey.urgency >= 8 ? 2 : 1
+              }}
+              eventHandlers={{
+                click: () => setActiveSurvey(survey)
+              }}
+            >
+              <Popup className="nx-popup">
+                <div className="text-sm font-bold">{survey.village}</div>
+                <div className="text-xs text-nx-text-secondary">{survey.need_type}</div>
+              </Popup>
+            </CircleMarker>
+          ))}
+        </MapContainer>
+      </div>
+
+      {/* TOP SEARCH BAR (Floating) */}
+      <div className="absolute top-6 left-1/2 -translate-x-1/2 z-[400] w-full max-w-md px-4">
+        <div className="bg-nx-bg-surface/90 backdrop-blur-md border border-nx-border-default rounded-xl shadow-modal flex items-center px-4 py-3">
+          <Search className="w-5 h-5 text-nx-text-tertiary" />
+          <input type="text" placeholder="Search village, district, need type..." className="bg-transparent border-none outline-none text-nx-text-primary text-sm flex-1 ml-3 placeholder:text-nx-text-disabled" />
+        </div>
+      </div>
+
+      {/* LEFT FILTER PANEL (Floating) */}
+      <motion.div 
+        initial={{ x: -20, opacity: 0 }}
+        animate={{ x: 0, opacity: 1 }}
+        className="absolute top-24 left-6 z-[400] w-80 bg-nx-bg-surface/90 backdrop-blur-md border border-nx-border-default rounded-2xl shadow-modal p-5 flex flex-col max-h-[calc(100vh-140px)]"
+      >
+        <div className="flex items-center justify-between mb-6 pb-4 border-b border-nx-border-subtle">
+          <h2 className="text-lg font-display font-bold text-nx-text-primary flex items-center gap-2">
+            <Target className="w-5 h-5 text-nx-accent-primary" /> Intelligence
+          </h2>
+          <span className="text-xs font-mono bg-nx-bg-elevated px-2 py-1 rounded text-nx-text-secondary">
+            {surveys.length} NEEDS
+          </span>
+        </div>
+        
+        <div className="flex-1 overflow-y-auto space-y-6 pr-2">
+          {/* Categories */}
+          <div>
+            <h3 className="text-xs font-bold text-nx-text-secondary uppercase tracking-widest mb-3">Categories</h3>
+            <div className="space-y-2">
+              {['Water', 'Health', 'Education', 'Food'].map(c => (
+                <label key={c} className="flex items-center gap-3 cursor-pointer">
+                  <div className="w-4 h-4 rounded border border-nx-border-strong bg-nx-bg-elevated checked:bg-nx-accent-primary" />
+                  <span className="text-sm text-nx-text-primary">{c}</span>
+                </label>
+              ))}
+            </div>
+          </div>
+          
+          {/* Urgency */}
+          <div>
+            <h3 className="text-xs font-bold text-nx-text-secondary uppercase tracking-widest mb-3">Urgency Level</h3>
+            <input type="range" min="1" max="10" className="w-full accent-nx-accent-primary" />
           </div>
         </div>
-      )}
 
-      <MapContainer
-        center={[9.2, 77.5]}
-        zoom={9}
-        style={{ height: '100%', width: '100%' }}
-        zoomControl={true}
-      >
-        <TileLayer
-          url={tileUrl}
-          attribution='&copy; <a href="https://www.openstreetmap.org">OSM</a>'
-        />
-        {surveys.map((survey) => (
-          <CircleMarker
-            key={survey.id}
-            center={[survey.lat, survey.lng]}
-            radius={8 + survey.urgency / 2}
-            pathOptions={{
-              fillColor:   mapMarkerColor(survey.urgency, isDark),
-              fillOpacity: 0.85,
-              color:       mapMarkerStroke(isDark),
-              weight:      1.5,
-            }}
+        <div className="pt-4 border-t border-nx-border-subtle mt-4">
+          <button className="w-full py-2.5 bg-nx-accent-primary hover:bg-nx-accent-hover text-white rounded-lg font-bold text-sm transition-all shadow-md">
+            Apply Filters
+          </button>
+        </div>
+      </motion.div>
+
+      {/* RIGHT DETAIL PANEL (Slide-in) */}
+      <AnimatePresence>
+        {activeSurvey && (
+          <motion.div
+            initial={{ x: 400, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={{ x: 400, opacity: 0 }}
+            transition={{ type: "spring", stiffness: 300, damping: 30 }}
+            className="absolute top-0 right-0 z-[500] w-full max-w-md h-full bg-nx-bg-surface border-l border-nx-border-strong shadow-modal flex flex-col"
           >
-            <Popup>
-              <div className="min-w-[160px]">
-                <p className="text-base font-bold text-slate-900 mb-1">{survey.village}</p>
-                <p className="text-sm text-slate-600 mb-1">
-                  {NEED_ICONS[survey.need_type]} {survey.need_type}
-                </p>
-                <span className={`inline-block text-xs font-semibold px-2 py-0.5 rounded-full ${urgencyColor(survey.urgency)}`}>
-                  {urgencyLabel(survey.urgency)} · {survey.urgency}/10
-                </span>
-                <p className="text-sm text-slate-600 mt-1.5">
-                  👨‍👩‍👧‍👦 {survey.families} families
+            <div className="p-4 border-b border-nx-border-subtle flex items-center justify-between bg-nx-bg-base/50">
+              <span className="text-xs font-mono font-bold text-nx-text-tertiary uppercase tracking-wider">Need Details</span>
+              <button onClick={() => setActiveSurvey(null)} className="p-2 hover:bg-nx-bg-elevated rounded-lg transition-colors">
+                <X className="w-5 h-5 text-nx-text-secondary" />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-6 space-y-8">
+              {/* Header */}
+              <div>
+                <div className="flex gap-2 items-center mb-3">
+                  <span className={`px-2 py-1 rounded text-[10px] font-mono font-bold uppercase ${activeSurvey.urgency >= 8 ? 'bg-nx-crimson-subtle text-nx-crimson' : 'bg-nx-amber-subtle text-nx-amber'}`}>
+                    Urgency {activeSurvey.urgency}/10
+                  </span>
+                  <span className="px-2 py-1 rounded bg-nx-bg-elevated text-nx-text-secondary text-[10px] font-mono uppercase">
+                    Open
+                  </span>
+                </div>
+                <h2 className="text-2xl font-display font-bold text-nx-text-primary mb-1">{activeSurvey.village}</h2>
+                <p className="text-sm text-nx-text-secondary flex items-center gap-1">
+                  <MapPin className="w-4 h-4" /> {activeSurvey.district} District
                 </p>
               </div>
-            </Popup>
-          </CircleMarker>
-        ))}
-      </MapContainer>
 
-      <MapLegend />
+              {/* Stats Grid */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-nx-bg-base border border-nx-border-subtle p-3 rounded-lg">
+                  <div className="text-xs text-nx-text-tertiary font-bold uppercase mb-1">Category</div>
+                  <div className="text-sm font-semibold text-nx-text-primary">{activeSurvey.need_type}</div>
+                </div>
+                <div className="bg-nx-bg-base border border-nx-border-subtle p-3 rounded-lg">
+                  <div className="text-xs text-nx-text-tertiary font-bold uppercase mb-1">Affected</div>
+                  <div className="text-sm font-semibold text-nx-text-primary">{activeSurvey.families} Families</div>
+                </div>
+              </div>
+
+              {/* Description */}
+              <div>
+                <h3 className="text-sm font-bold text-nx-text-primary mb-2">Description</h3>
+                <p className="text-sm text-nx-text-secondary leading-relaxed bg-nx-bg-elevated p-4 rounded-lg border border-nx-border-subtle">
+                  {activeSurvey.description || "No specific details provided in the field report. Assessment required."}
+                </p>
+              </div>
+
+              {/* Timeline */}
+              <div>
+                <h3 className="text-sm font-bold text-nx-text-primary mb-4">Status Timeline</h3>
+                <div className="space-y-4 relative before:absolute before:inset-0 before:ml-2.5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-nx-border-strong before:to-transparent">
+                  <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full border-2 border-nx-accent-primary bg-nx-bg-base text-slate-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
+                      <div className="w-1.5 h-1.5 bg-nx-accent-primary rounded-full" />
+                    </div>
+                    <div className="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 rounded shadow-sm bg-nx-bg-base border border-nx-border-default">
+                      <div className="font-bold text-xs text-nx-text-primary">Reported</div>
+                      <div className="text-[10px] text-nx-text-tertiary font-mono">14:23 Today</div>
+                    </div>
+                  </div>
+                  <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group">
+                    <div className="flex items-center justify-center w-5 h-5 rounded-full border border-nx-border-strong bg-nx-bg-base shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2" />
+                    <div className="w-[calc(100%-2rem)] md:w-[calc(50%-1.5rem)] p-3 rounded shadow-sm bg-transparent border border-nx-border-subtle opacity-50">
+                      <div className="font-bold text-xs text-nx-text-secondary">Assigned</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="p-4 border-t border-nx-border-strong bg-nx-bg-base/80 backdrop-blur">
+              <button className="w-full py-3 bg-nx-accent-primary hover:bg-nx-accent-hover text-white rounded-lg font-bold text-sm transition-all shadow-md flex items-center justify-center gap-2">
+                Find Volunteers <ChevronRight className="w-4 h-4" />
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <style jsx global>{`
+        .leaflet-container {
+          background: var(--color-bg-base);
+          font-family: var(--font-body);
+        }
+        .leaflet-popup-content-wrapper {
+          background: var(--color-bg-elevated);
+          color: var(--color-text-primary);
+          border: 1px solid var(--color-border-strong);
+          border-radius: 8px;
+          box-shadow: var(--shadow-card);
+        }
+        .leaflet-popup-tip {
+          background: var(--color-bg-elevated);
+          border-top: 1px solid var(--color-border-strong);
+          border-left: 1px solid var(--color-border-strong);
+        }
+      `}</style>
     </div>
   );
 }

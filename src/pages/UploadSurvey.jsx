@@ -1,176 +1,301 @@
-import React, { useCallback, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { supabase } from '../lib/supabaseClient';
+import React, { useState, useEffect } from 'react';
+import { UploadCloud, CheckCircle2, AlertTriangle, MapPin, Activity, ShieldAlert, HeartPulse, Droplet, Thermometer, Pill, Camera, Mic, Save, Send } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
-const NEED_TYPES = ['Clean Water', 'Medical Aid', 'Education', 'Food Supply', 'Sanitation', 'Infrastructure'];
-const MOCK_PARSED = { village: 'Kadayam', need_type: 'Food Supply', urgency: 9, families: 140 };
-
-function Toast({ msg, type }) {
-  if (!msg) return null;
-  const cls = type === 'success' ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white';
-  return (
-    <div className={`fixed bottom-6 right-6 z-50 px-5 py-3 rounded-xl shadow-xl text-sm font-semibold animate-slide-up ${cls}`}>
-      {msg}
-    </div>
-  );
-}
+const OCR_STEPS = [
+  'Image Processing',
+  'Text Extraction',
+  'AI Classification',
+  'Field Mapping'
+];
 
 export default function UploadSurvey() {
-  const navigate   = useNavigate();
-  const inputRef   = useRef();
-  const [file,     setFile]     = useState(null);
-  const [preview,  setPreview]  = useState(null);
-  const [loading,  setLoading]  = useState(false);
-  const [parsed,   setParsed]   = useState(null);
-  const [form,     setForm]     = useState(MOCK_PARSED);
-  const [toast,    setToast]    = useState({ msg: '', type: '' });
-  const [dragging, setDragging] = useState(false);
-  const [saving,   setSaving]   = useState(false);
+  const [file, setFile] = useState(null);
+  const [isDragging, setIsDragging] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrStatus, setOcrStatus] = useState('idle'); // idle, scanning, complete
+  const [confidence, setConfidence] = useState(0);
 
-  function showToast(msg, type) {
-    setToast({ msg, type });
-    setTimeout(() => setToast({ msg: '', type: '' }), 3500);
-  }
+  // Form State
+  const [formData, setFormData] = useState({
+    village: '',
+    district: '',
+    category: '',
+    description: '',
+    urgency: 5,
+    families: 0
+  });
 
-  function handleFile(f) {
-    if (!f) return;
-    setFile(f);
-    setPreview(URL.createObjectURL(f));
-    setParsed(null);
-  }
-
-  const onDrop = useCallback((e) => {
+  const handleDrop = (e) => {
     e.preventDefault();
-    setDragging(false);
-    handleFile(e.dataTransfer.files[0]);
-  }, []);
-
-  function analyze() {
-    setLoading(true);
-    setTimeout(() => {
-      setLoading(false);
-      setParsed(MOCK_PARSED);
-      setForm(MOCK_PARSED);
-    }, 1500);
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setSaving(true);
-    try {
-      const { error } = await supabase.from('surveys').insert([{
-        village: form.village, need_type: form.need_type,
-        urgency: Number(form.urgency), families: Number(form.families),
-        lat: 9.1205, lng: 77.3982, status: 'open',
-      }]);
-      if (error) throw error;
-      showToast('✅ Survey added to heatmap!', 'success');
-      setTimeout(() => navigate('/map'), 1500);
-    } catch (err) {
-      showToast(`❌ ${err?.message || 'Failed to save survey.'}`, 'error');
-    } finally {
-      setSaving(false);
+    setIsDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      startOcrPipeline(e.dataTransfer.files[0]);
     }
-  }
+  };
+
+  const startOcrPipeline = (uploadedFile) => {
+    setFile(URL.createObjectURL(uploadedFile));
+    setOcrStatus('scanning');
+    setOcrProgress(0);
+
+    // Simulate OCR steps
+    let step = 0;
+    const interval = setInterval(() => {
+      step++;
+      setOcrProgress(step);
+      if (step === 4) {
+        clearInterval(interval);
+        setOcrStatus('complete');
+        setConfidence(94);
+        setFormData({
+          ...formData,
+          village: 'Kadayam',
+          district: 'Tenkasi',
+          category: 'Medical Aid',
+          description: 'Emergency medical supplies needed due to recent flooding affecting main road access.',
+          families: 45,
+          urgency: 8
+        });
+      }
+    }, 800);
+  };
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300">
-      <div className="max-w-2xl mx-auto px-4 sm:px-6 py-8 page-enter">
-        <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-1">Upload Survey</h1>
-        <p className="text-slate-500 dark:text-slate-400 mb-8 text-sm">
-          Upload a paper survey image — our system will extract the data automatically.
-        </p>
+    <div className="min-h-screen bg-nx-bg-base font-body pt-8 pb-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        
+        <div className="mb-8">
+          <h1 className="text-3xl font-display font-bold text-nx-text-primary tracking-tight">
+            Intelligence Upload
+          </h1>
+          <p className="text-nx-text-secondary mt-1">
+            Upload field surveys for automated AI extraction and mapping.
+          </p>
+        </div>
 
-        {!preview && (
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={onDrop}
-            onClick={() => inputRef.current?.click()}
-            className={`border-2 border-dashed rounded-2xl p-14 flex flex-col items-center cursor-pointer transition-all duration-200
-              ${dragging
-                ? 'border-blue-500 bg-blue-50 dark:bg-blue-500/10 scale-[1.01]'
-                : 'border-slate-300 dark:border-slate-600 hover:border-blue-400 dark:hover:border-blue-500 hover:bg-slate-100 dark:hover:bg-slate-800/50'
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          
+          {/* LEFT: Upload & OCR Pipeline */}
+          <div className="space-y-6">
+            
+            {/* Upload Zone */}
+            <div 
+              onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
+              onDragLeave={() => setIsDragging(false)}
+              onDrop={handleDrop}
+              className={`relative border-2 border-dashed rounded-xl overflow-hidden transition-all duration-300 ${
+                isDragging ? 'border-nx-accent-primary bg-nx-accent-subtle' : 'border-nx-border-strong bg-nx-bg-surface hover:border-nx-accent-primary hover:bg-nx-bg-elevated'
               }`}
-          >
-            <span className="text-5xl mb-4">📄</span>
-            <p className="text-slate-700 dark:text-slate-300 font-semibold mb-1">Drag & drop survey image here</p>
-            <p className="text-sm text-slate-400">or click to browse · PNG, JPG</p>
-            <input ref={inputRef} type="file" accept="image/*" className="hidden"
-              onChange={(e) => handleFile(e.target.files[0])} />
-          </div>
-        )}
-
-        {preview && (
-          <div className="mb-5 bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
-            <img src={preview} alt="Survey preview" className="w-full max-h-60 object-contain bg-slate-100 dark:bg-slate-900" />
-            <div className="px-4 py-3 flex items-center justify-between">
-              <span className="text-sm text-slate-500 dark:text-slate-400 truncate">{file?.name}</span>
-              <button onClick={() => { setPreview(null); setFile(null); setParsed(null); }}
-                className="text-xs text-red-500 hover:text-red-600 font-medium">Remove ✕</button>
-            </div>
-          </div>
-        )}
-
-        {preview && !parsed && (
-          <button onClick={analyze} disabled={loading}
-            className="w-full py-3 rounded-xl bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white font-semibold text-sm transition-all hover:scale-[1.02] active:scale-95 mb-6 flex items-center justify-center gap-2">
-            {loading
-              ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Analyzing survey…</>
-              : '🔍 Analyze Survey'}
-          </button>
-        )}
-
-        {parsed && (
-          <form onSubmit={handleSubmit}
-            className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 shadow-sm space-y-5 animate-slide-up">
-            <h2 className="text-lg font-bold text-slate-900 dark:text-white">📋 Parsed Survey Data</h2>
-
-            {[
-              { label: 'Village', key: 'village', type: 'text' },
-            ].map(({ label, key, type }) => (
-              <div key={key}>
-                <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">{label}</label>
-                <input type={type} required value={form[key]}
-                  onChange={(e) => setForm({ ...form, [key]: e.target.value })}
-                  className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+            >
+              <div className="p-12 flex flex-col items-center justify-center text-center h-80">
+                {file ? (
+                  <div className="relative w-full h-full rounded-lg overflow-hidden border border-nx-border-subtle group">
+                    <img src={file} alt="Survey preview" className="w-full h-full object-cover opacity-80" />
+                    <div className="absolute inset-0 bg-nx-bg-base/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                      <button className="px-4 py-2 bg-nx-bg-overlay backdrop-blur rounded-lg text-sm font-bold text-white border border-nx-border-default shadow-modal">
+                        View Full Size
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <div className="w-16 h-16 rounded-full bg-nx-bg-elevated flex items-center justify-center mb-4">
+                      <UploadCloud className="w-8 h-8 text-nx-accent-primary" />
+                    </div>
+                    <p className="text-lg font-bold text-nx-text-primary mb-2 font-display">
+                      {isDragging ? 'Drop survey here!' : 'Drop survey or photo here'}
+                    </p>
+                    <p className="text-sm text-nx-text-tertiary mb-6 max-w-xs">
+                      Supports JPG, PNG, and PDF. Our OCR engine handles handwritten forms automatically.
+                    </p>
+                    <label className="cursor-pointer px-6 py-2.5 bg-nx-bg-elevated border border-nx-border-default hover:bg-nx-bg-overlay text-nx-text-primary rounded-lg text-sm font-bold transition-all active:scale-95">
+                      <span>Browse Files</span>
+                      <input type="file" className="hidden" onChange={(e) => e.target.files[0] && startOcrPipeline(e.target.files[0])} />
+                    </label>
+                  </>
+                )}
               </div>
-            ))}
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">Need Type</label>
-              <select value={form.need_type} onChange={(e) => setForm({ ...form, need_type: e.target.value })}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
-                {NEED_TYPES.map((t) => <option key={t}>{t}</option>)}
-              </select>
+              
+              {/* Scan Line Animation */}
+              {ocrStatus === 'scanning' && (
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="w-full h-1 bg-nx-accent-primary shadow-[0_0_15px_rgba(29,78,216,0.8)] animate-scan-fast" />
+                </div>
+              )}
             </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">
-                Urgency: <span className="text-blue-600 dark:text-blue-400 font-bold">{form.urgency}/10</span>
-              </label>
-              <input type="range" min="1" max="10" value={form.urgency}
-                onChange={(e) => setForm({ ...form, urgency: Number(e.target.value) })} className="w-full" />
-              <div className="flex justify-between text-xs text-slate-400 mt-1"><span>Low</span><span>High</span></div>
-            </div>
+            {/* OCR Pipeline */}
+            <div className="bg-nx-bg-surface border border-nx-border-subtle rounded-xl p-6 shadow-sm">
+              <h3 className="text-sm font-bold text-nx-text-secondary uppercase tracking-widest mb-6">OCR Intelligence Pipeline</h3>
+              
+              <div className="space-y-4">
+                {OCR_STEPS.map((stepName, i) => {
+                  const isActive = ocrStatus === 'scanning' && ocrProgress === i;
+                  const isDone = ocrProgress > i || ocrStatus === 'complete';
+                  return (
+                    <div key={i} className="flex items-center gap-4">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 border transition-all duration-300 ${
+                        isDone ? 'bg-nx-cyan-subtle border-nx-cyan' : 
+                        isActive ? 'bg-nx-accent-subtle border-nx-accent-primary' : 
+                        'bg-nx-bg-elevated border-nx-border-default'
+                      }`}>
+                        {isDone ? <CheckCircle2 className="w-4 h-4 text-nx-cyan" /> :
+                         isActive ? <div className="w-4 h-4 border-2 border-nx-accent-primary border-t-transparent rounded-full animate-spin" /> :
+                         <span className="text-xs font-mono text-nx-text-tertiary">{i + 1}</span>}
+                      </div>
+                      <span className={`text-sm font-semibold transition-colors ${
+                        isDone || isActive ? 'text-nx-text-primary' : 'text-nx-text-disabled'
+                      }`}>
+                        {stepName}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
 
-            <div>
-              <label className="block text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1 uppercase tracking-wide">Families Affected</label>
-              <input type="number" min="1" required value={form.families}
-                onChange={(e) => setForm({ ...form, families: Number(e.target.value) })}
-                className="w-full px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition" />
+              {/* Confidence Meter */}
+              {ocrStatus === 'complete' && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} className="mt-8 pt-6 border-t border-nx-border-subtle">
+                  <div className="flex justify-between items-end mb-2">
+                    <span className="text-sm font-bold text-nx-text-primary">AI Confidence Score</span>
+                    <span className="text-2xl font-mono font-bold text-nx-green">{confidence}%</span>
+                  </div>
+                  <div className="w-full h-2 bg-nx-bg-elevated rounded-full overflow-hidden">
+                    <motion.div initial={{ width: 0 }} animate={{ width: `${confidence}%` }} transition={{ duration: 1, ease: 'easeOut' }} className="h-full bg-nx-green" />
+                  </div>
+                  <p className="text-xs text-nx-text-tertiary mt-2">All primary fields extracted successfully. Ready for manual review.</p>
+                </motion.div>
+              )}
             </div>
+          </div>
 
-            <button type="submit" disabled={saving}
-              className="w-full py-3 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-60 text-white font-semibold text-sm transition-all hover:scale-[1.02] active:scale-95 flex items-center justify-center gap-2">
-              {saving
-                ? <><span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />Saving…</>
-                : '✅ Confirm & Save to Database'}
-            </button>
-          </form>
-        )}
+          {/* RIGHT: Form Panel */}
+          <div className="bg-nx-bg-surface border border-nx-border-subtle rounded-xl shadow-sm overflow-hidden flex flex-col relative">
+            {ocrStatus !== 'complete' && ocrStatus !== 'idle' && (
+              <div className="absolute inset-0 bg-nx-bg-surface/80 backdrop-blur-sm z-10 flex flex-col items-center justify-center">
+                <div className="w-12 h-12 border-4 border-nx-border-strong border-t-nx-accent-primary rounded-full animate-spin mb-4" />
+                <p className="font-mono text-sm text-nx-text-secondary uppercase tracking-widest animate-pulse">Extracting Data...</p>
+              </div>
+            )}
+            
+            <div className="p-6 space-y-8 overflow-y-auto">
+              
+              {/* Location Section */}
+              <section>
+                <h3 className="text-sm font-bold text-nx-text-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <MapPin className="w-4 h-4" /> Location Context
+                </h3>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-nx-text-tertiary">Village / Ward</label>
+                    <input type="text" value={formData.village} onChange={(e) => setFormData({...formData, village: e.target.value})} className="w-full bg-nx-bg-base border border-nx-border-default focus:border-nx-accent-primary rounded-lg px-3 py-2 text-sm text-nx-text-primary outline-none transition-colors" placeholder="Enter village..." />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-nx-text-tertiary">District</label>
+                    <input type="text" value={formData.district} onChange={(e) => setFormData({...formData, district: e.target.value})} className="w-full bg-nx-bg-base border border-nx-border-default focus:border-nx-accent-primary rounded-lg px-3 py-2 text-sm text-nx-text-primary outline-none transition-colors" placeholder="Select district..." />
+                  </div>
+                </div>
+              </section>
+
+              {/* Need Details */}
+              <section>
+                <h3 className="text-sm font-bold text-nx-text-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <Activity className="w-4 h-4" /> Need Categorization
+                </h3>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  {[
+                    { id: 'Water', icon: Droplet },
+                    { id: 'Medical Aid', icon: HeartPulse },
+                    { id: 'Food', icon: Pill },
+                    { id: 'Sanitation', icon: ShieldAlert },
+                    { id: 'Shelter', icon: Thermometer },
+                    { id: 'Other', icon: Activity }
+                  ].map(cat => (
+                    <button 
+                      key={cat.id}
+                      onClick={() => setFormData({...formData, category: cat.id})}
+                      className={`flex flex-col items-center justify-center gap-2 p-3 rounded-lg border transition-all ${
+                        formData.category === cat.id ? 'bg-nx-accent-subtle border-nx-accent-primary text-nx-accent-primary' : 'bg-nx-bg-base border-nx-border-default text-nx-text-secondary hover:border-nx-text-tertiary'
+                      }`}
+                    >
+                      <cat.icon className="w-5 h-5" />
+                      <span className="text-[10px] font-bold uppercase">{cat.id}</span>
+                    </button>
+                  ))}
+                </div>
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-nx-text-tertiary">Detailed Description</label>
+                  <textarea value={formData.description} onChange={(e) => setFormData({...formData, description: e.target.value})} rows={3} className="w-full bg-nx-bg-base border border-nx-border-default focus:border-nx-accent-primary rounded-lg px-3 py-2 text-sm text-nx-text-primary outline-none transition-colors resize-none" placeholder="Describe the situation..." />
+                </div>
+              </section>
+
+              {/* Urgency */}
+              <section>
+                <h3 className="text-sm font-bold text-nx-text-secondary uppercase tracking-widest mb-4 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" /> Urgency Assessment
+                </h3>
+                <div className="bg-nx-bg-base border border-nx-border-default rounded-lg p-4 mb-4">
+                  <div className="flex justify-between items-end mb-2">
+                    <span className="text-xs font-bold text-nx-text-tertiary">Urgency Level</span>
+                    <span className={`text-xl font-mono font-bold ${formData.urgency >= 8 ? 'text-nx-crimson' : formData.urgency >= 5 ? 'text-nx-amber' : 'text-nx-cyan'}`}>
+                      {formData.urgency}/10
+                    </span>
+                  </div>
+                  <input 
+                    type="range" min="1" max="10" 
+                    value={formData.urgency} 
+                    onChange={(e) => setFormData({...formData, urgency: Number(e.target.value)})}
+                    className="w-full accent-nx-accent-primary h-2 bg-nx-bg-elevated rounded-lg appearance-none cursor-pointer"
+                  />
+                  <div className="flex justify-between text-[10px] font-mono text-nx-text-disabled mt-2 uppercase">
+                    <span>Monitor</span>
+                    <span>Urgent</span>
+                    <span>Critical</span>
+                  </div>
+                </div>
+                
+                <div className="space-y-2">
+                  <label className="text-xs font-bold text-nx-text-tertiary">Families Affected</label>
+                  <input type="number" value={formData.families} onChange={(e) => setFormData({...formData, families: Number(e.target.value)})} className="w-full bg-nx-bg-base border border-nx-border-default focus:border-nx-accent-primary rounded-lg px-3 py-2 text-sm text-nx-text-primary outline-none transition-colors" />
+                </div>
+              </section>
+
+              {/* Media */}
+              <section className="flex gap-4">
+                <button className="flex-1 py-3 bg-nx-bg-base border border-nx-border-dashed hover:bg-nx-bg-elevated text-nx-text-secondary rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2">
+                  <Camera className="w-4 h-4" /> Add Photos
+                </button>
+                <button className="flex-1 py-3 bg-nx-bg-base border border-nx-border-dashed hover:bg-nx-bg-elevated text-nx-text-secondary rounded-lg text-sm font-bold transition-colors flex items-center justify-center gap-2">
+                  <Mic className="w-4 h-4" /> Voice Note
+                </button>
+              </section>
+
+            </div>
+          </div>
+        </div>
+
       </div>
-      <Toast msg={toast.msg} type={toast.type} />
+
+      {/* Sticky Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 bg-nx-bg-surface/80 backdrop-blur-md border-t border-nx-border-strong px-6 py-4 z-40">
+        <div className="max-w-7xl mx-auto flex items-center justify-between">
+          <label className="flex items-center gap-3 cursor-pointer group">
+            <div className="w-5 h-5 border border-nx-border-strong rounded bg-nx-bg-base group-hover:border-nx-accent-primary flex items-center justify-center">
+              {ocrStatus === 'complete' && <CheckCircle2 className="w-3 h-3 text-nx-accent-primary" />}
+            </div>
+            <span className="text-sm font-bold text-nx-text-secondary select-none">I verify this information is accurate</span>
+          </label>
+          <div className="flex gap-4">
+            <button className="px-6 py-2.5 bg-nx-bg-elevated border border-nx-border-default hover:bg-nx-bg-overlay text-nx-text-primary rounded-lg font-bold text-sm transition-all shadow-sm">
+              Save Draft
+            </button>
+            <button className="px-8 py-2.5 bg-nx-accent-primary hover:bg-nx-accent-hover text-white rounded-lg font-bold text-sm transition-all shadow-md hover:shadow-glow active:scale-95 flex items-center gap-2">
+              <Send className="w-4 h-4" /> Submit Survey
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

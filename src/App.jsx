@@ -4,6 +4,8 @@ import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 
 // Lazy-load all pages for smaller initial bundle
+const Login            = lazy(() => import('./pages/Login'));
+const Landing          = lazy(() => import('./pages/Landing'));
 const Dashboard        = lazy(() => import('./pages/Dashboard'));
 const HeatMap          = lazy(() => import('./pages/HeatMap'));
 const UploadSurvey     = lazy(() => import('./pages/UploadSurvey'));
@@ -26,16 +28,18 @@ export default function App() {
   return (
     <ThemeProvider>
       <BrowserRouter>
-        <div className="min-h-screen bg-slate-50 dark:bg-slate-950 transition-colors duration-300 font-sans">
+        <div className="min-h-screen bg-nx-bg-base text-nx-text-primary transition-colors duration-300 font-body">
           <Navbar />
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/"        element={<Dashboard />} />
-              <Route path="/map"     element={<HeatMap />} />
-              <Route path="/upload"  element={<UploadSurvey />} />
-              <Route path="/match"   element={<VolunteerMatcher />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="*"        element={<NotFound />} />
+              <Route path="/"          element={<Landing />} />
+              <Route path="/login"     element={<Login />} />
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/map"       element={<HeatMap />} />
+              <Route path="/upload"    element={<UploadSurvey />} />
+              <Route path="/match"     element={<VolunteerMatcher />} />
+              <Route path="/reports"   element={<Reports />} />
+              <Route path="*"          element={<NotFound />} />
             </Routes>
           </Suspense>
         </div>
