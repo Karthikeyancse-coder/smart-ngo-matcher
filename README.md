@@ -2,6 +2,8 @@
 
 ![NexusAid Banner](https://img.shields.io/badge/Status-Active-success?style=for-the-badge) ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 
+🚀 **Live Preview:** [https://smart-ngo-matcher.vercel.app/](https://smart-ngo-matcher.vercel.app/)
+
 **NexusAid** is a next-generation platform designed to revolutionize how Non-Governmental Organizations (NGOs) and disaster response teams manage ground operations. By intelligently bridging the gap between field incidents and available volunteer skills, NexusAid ensures rapid, coordinated, and transparent disaster relief.
 
 ---
@@ -83,10 +85,14 @@ The application will be available at `http://localhost:3000`.
 ---
 
 ## ☁️ Deployment (Vercel)
-This project is fully optimized for Vercel deployment:
+This project is fully optimized for Vercel deployment. You can view the active production build here:
+👉 **[NexusAid Live Deployment](https://smart-ngo-matcher.vercel.app/)**
+
+If you wish to deploy your own instance:
 1. Connect your GitHub repository to Vercel.
-2. Add the `REACT_APP_SUPABASE_URL` and `REACT_APP_SUPABASE_ANON_KEY` as Environment Variables in the Vercel dashboard.
-3. Deploy!
+2. Override the Build Command to `CI=false npm run build` to bypass strict unused-variable linting.
+3. Add the `REACT_APP_SUPABASE_URL` and `REACT_APP_SUPABASE_ANON_KEY` as Environment Variables in the Vercel dashboard.
+4. Deploy!
 
 ---
 *Built with ❤️ to optimize global relief efforts.*
