@@ -2,7 +2,17 @@
 
 ![NexusAid Banner](https://img.shields.io/badge/Status-Active-success?style=for-the-badge) ![React](https://img.shields.io/badge/React-20232A?style=for-the-badge&logo=react&logoColor=61DAFB) ![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-38B2AC?style=for-the-badge&logo=tailwind-css&logoColor=white) ![Supabase](https://img.shields.io/badge/Supabase-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white)
 
-🚀 **Live Preview:** [https://smart-ngo-matcher.vercel.app/](https://smart-ngo-matcher.vercel.app/)
+<div align="center">
+  <br />
+  <a href="https://smart-ngo-matcher.vercel.app/" target="_blank">
+    <img src="./public/preview.png" alt="NexusAid Live Preview" width="800" style="border-radius: 8px; box-shadow: 0 4px 14px rgba(0,0,0,0.3);" />
+  </a>
+  <br />
+  <br />
+  <b>🚀 <a href="https://smart-ngo-matcher.vercel.app/" target="_blank">Click here or on the image above to view the Live Deployment</a></b>
+  <br />
+  <br />
+</div>
 
 **NexusAid** is a next-generation platform designed to revolutionize how Non-Governmental Organizations (NGOs) and disaster response teams manage ground operations. By intelligently bridging the gap between field incidents and available volunteer skills, NexusAid ensures rapid, coordinated, and transparent disaster relief.
 
