@@ -4,14 +4,17 @@ import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 
 // Lazy-load all pages for smaller initial bundle
-const Login            = lazy(() => import('./pages/Login'));
-const Landing          = lazy(() => import('./pages/Landing'));
-const Dashboard        = lazy(() => import('./pages/Dashboard'));
-const HeatMap          = lazy(() => import('./pages/HeatMap'));
-const UploadSurvey     = lazy(() => import('./pages/UploadSurvey'));
+const Login = lazy(() => import('./pages/Login'));
+const Landing = lazy(() => import('./pages/Landing'));
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const HeatMap = lazy(() => import('./pages/HeatMap'));
+const UploadSurvey = lazy(() => import('./pages/UploadSurvey'));
 const VolunteerMatcher = lazy(() => import('./pages/VolunteerMatcher'));
-const Reports          = lazy(() => import('./pages/Reports'));
-const NotFound         = lazy(() => import('./pages/NotFound'));
+const VolunteerDashboard = lazy(() => import('./pages/VolunteerDashboard'));
+const VolunteerMap = lazy(() => import('./pages/VolunteerMap'));
+const VolunteerFeedback = lazy(() => import('./pages/VolunteerFeedback'));
+const Reports = lazy(() => import('./pages/Reports'));
+const NotFound = lazy(() => import('./pages/NotFound'));
 
 function PageLoader() {
   return (
@@ -40,14 +43,18 @@ export default function App() {
           <Navbar />
           <Suspense fallback={<PageLoader />}>
             <Routes>
-              <Route path="/"          element={<Landing />} />
-              <Route path="/login"     element={<Login />} />
+              <Route path="/" element={<Landing />} />
+              <Route path="/login" element={<Login />} />
+              {/* <Route path="/volunteer/login" element={<Login isVolunteerPortal={true} />} /> */}
               <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-              <Route path="/map"       element={<ProtectedRoute><HeatMap /></ProtectedRoute>} />
-              <Route path="/upload"    element={<ProtectedRoute><UploadSurvey /></ProtectedRoute>} />
-              <Route path="/match"     element={<ProtectedRoute><VolunteerMatcher /></ProtectedRoute>} />
-              <Route path="/reports"   element={<ProtectedRoute><Reports /></ProtectedRoute>} />
-              <Route path="*"          element={<NotFound />} />
+              <Route path="/volunteer/dashboard" element={<ProtectedRoute><VolunteerDashboard /></ProtectedRoute>} />
+              <Route path="/volunteer/map" element={<ProtectedRoute><VolunteerMap /></ProtectedRoute>} />
+              <Route path="/volunteer/feedback" element={<ProtectedRoute><VolunteerFeedback /></ProtectedRoute>} />
+              <Route path="/map" element={<ProtectedRoute><HeatMap /></ProtectedRoute>} />
+              <Route path="/upload" element={<ProtectedRoute><UploadSurvey /></ProtectedRoute>} />
+              <Route path="/match" element={<ProtectedRoute><VolunteerMatcher /></ProtectedRoute>} />
+              <Route path="/reports" element={<ProtectedRoute><Reports /></ProtectedRoute>} />
+              <Route path="*" element={<NotFound />} />
             </Routes>
           </Suspense>
         </div>

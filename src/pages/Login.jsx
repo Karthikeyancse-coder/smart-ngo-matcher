@@ -1,26 +1,32 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Target, ArrowRight, Mail, Lock, ShieldAlert } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Target, ArrowRight, Mail, Lock, ShieldAlert, Eye, EyeOff } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../lib/supabaseClient';
 
-export default function Login() {
+export default function Login({ isVolunteerPortal = false }) {
   const navigate = useNavigate();
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
+  const [role, setRole] = useState(isVolunteerPortal ? 'volunteer' : 'coordinator');
+  const [email, setEmail] = useState(isVolunteerPortal ? 'dr.aravind@gmail.com' : 'admin@nexusaid.org');
+  const [password, setPassword] = useState(isVolunteerPortal ? 'volunteer123' : 'admin123');
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
+
+  const handleRoleSwitch = (newRole) => {
+    setRole(newRole);
+    if (newRole === 'coordinator') {
+      setEmail('admin@nexusaid.org');
+      setPassword('admin123');
+    } else {
+      setEmail('dr.aravind@gmail.com');
+      setPassword('volunteer123');
+    }
+  };
 
   const handleDemoLogin = (e) => {
     e.preventDefault();
-    setEmail('admin@nexusaid.org');
-    setPassword('••••••••••••');
-    setIsLoading(true);
-    
-    // Simulate network delay for demo
-    setTimeout(() => {
-      localStorage.setItem('isAuthenticated', 'true');
-      navigate('/dashboard');
-    }, 1500);
+    handleSubmit(e);
   };
 
   const handleSubmit = (e) => {
@@ -28,7 +34,13 @@ export default function Login() {
     setIsLoading(true);
     setTimeout(() => {
       localStorage.setItem('isAuthenticated', 'true');
-      navigate('/dashboard');
+      localStorage.setItem('userRole', role);
+      
+      if (role === 'volunteer') {
+        navigate('/volunteer/dashboard');
+      } else {
+        navigate('/dashboard');
+      }
     }, 1000);
   };
 
@@ -76,7 +88,7 @@ export default function Login() {
             Intelligence at <br/>the edge of impact.
           </h2>
           <p className="text-lg text-nx-text-secondary leading-relaxed mb-12">
-            Sign in to access the Command Center, view live threat maps, and deploy resources to communities in need.
+            Select your role to access the Command Center as a Coordinator, or manage your field assignments as a Volunteer.
           </p>
 
           <div className="bg-nx-bg-card border border-nx-border-subtle rounded-xl p-6 shadow-modal">
@@ -110,11 +122,58 @@ export default function Login() {
             </span>
           </div>
 
+          {/* Animated Mascot */}
+          <div className="flex justify-center mb-6">
+            <div className="relative w-20 h-20 bg-nx-bg-elevated rounded-full border-4 border-nx-border-strong overflow-hidden flex items-center justify-center shadow-md">
+              {/* Eyes */}
+              <div className="flex gap-3 mt-[-10px]">
+                <motion.div 
+                  className="w-3 h-3 bg-nx-text-primary rounded-full" 
+                  animate={{ scaleY: isPasswordFocused && !showPassword ? 0.2 : 1 }}
+                />
+                <motion.div 
+                  className="w-3 h-3 bg-nx-text-primary rounded-full" 
+                  animate={{ scaleY: isPasswordFocused && !showPassword ? 0.2 : 1 }}
+                />
+              </div>
+              
+              {/* Hands covering eyes */}
+              <motion.div 
+                className="absolute inset-x-0 bottom-0 flex items-end justify-center gap-1"
+                initial={{ y: 50 }}
+                animate={{ y: isPasswordFocused && !showPassword ? -10 : 50 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              >
+                <div className="w-8 h-10 bg-nx-accent-primary rounded-t-full shadow-[0_-4px_10px_rgba(0,0,0,0.2)]" />
+                <div className="w-8 h-10 bg-nx-accent-primary rounded-t-full shadow-[0_-4px_10px_rgba(0,0,0,0.2)]" />
+              </motion.div>
+            </div>
+          </div>
+
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-            <h1 className="text-3xl font-display font-bold text-nx-text-primary mb-2">Welcome back</h1>
-            <p className="text-nx-text-secondary mb-8">Enter your credentials to access the platform.</p>
+            <h1 className="text-3xl font-display font-bold text-nx-text-primary mb-2 text-center">Welcome back</h1>
+            <p className="text-nx-text-secondary mb-8 text-center">Enter your credentials to access the platform.</p>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {/* Role Switcher - Hidden in dedicated portals */}
+              {!isVolunteerPortal && (
+                <div className="flex bg-nx-bg-surface p-1 rounded-lg border border-nx-border-default mb-2">
+                  <button 
+                    type="button"
+                    onClick={() => handleRoleSwitch('coordinator')}
+                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${role === 'coordinator' ? 'bg-nx-accent-primary text-white shadow-md' : 'text-nx-text-secondary hover:text-nx-text-primary hover:bg-nx-bg-elevated'}`}
+                  >
+                    Coordinator
+                  </button>
+                  <button 
+                    type="button"
+                    onClick={() => handleRoleSwitch('volunteer')}
+                    className={`flex-1 py-2 text-sm font-bold rounded-md transition-all ${role === 'volunteer' ? 'bg-nx-accent-primary text-white shadow-md' : 'text-nx-text-secondary hover:text-nx-text-primary hover:bg-nx-bg-elevated'}`}
+                  >
+                    Volunteer
+                  </button>
+                </div>
+              )}
               <div className="space-y-2">
                 <label className="text-sm font-bold text-nx-text-secondary">Email Address</label>
                 <div className="relative">
@@ -138,13 +197,33 @@ export default function Login() {
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-nx-text-tertiary" />
                   <input 
-                    type="password" 
+                    type={showPassword ? "text" : "password"} 
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
+                    onFocus={() => setIsPasswordFocused(true)}
+                    onBlur={() => setIsPasswordFocused(false)}
                     required
-                    className="w-full bg-nx-bg-surface border border-nx-border-default focus:border-nx-accent-primary rounded-lg pl-10 pr-4 py-3 text-nx-text-primary placeholder:text-nx-text-disabled outline-none transition-all shadow-sm focus:shadow-glow"
+                    className="w-full bg-nx-bg-surface border border-nx-border-default focus:border-nx-accent-primary rounded-lg pl-10 pr-12 py-3 text-nx-text-primary placeholder:text-nx-text-disabled outline-none transition-all shadow-sm focus:shadow-glow"
                     placeholder="••••••••"
                   />
+                  <button 
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-nx-text-tertiary hover:text-nx-text-primary transition-colors focus:outline-none"
+                    tabIndex="-1"
+                  >
+                    <AnimatePresence mode="wait">
+                      {showPassword ? (
+                        <motion.div key="eye-off" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.15 }}>
+                          <EyeOff className="w-5 h-5" />
+                        </motion.div>
+                      ) : (
+                        <motion.div key="eye" initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} transition={{ duration: 0.15 }}>
+                          <Eye className="w-5 h-5" />
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </button>
                 </div>
               </div>
 

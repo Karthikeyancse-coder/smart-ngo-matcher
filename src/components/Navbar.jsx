@@ -17,16 +17,30 @@ const LANDING_LINKS = [
   { to: '#impact',    label: 'Impact', icon: null },
 ];
 
+const VOLUNTEER_LINKS = [
+  { to: '/volunteer/dashboard', label: 'My Tasks', icon: <Home className="w-4 h-4" /> },
+  { to: '/volunteer/map',       label: 'Task Map', icon: <MapIcon className="w-4 h-4" /> },
+  { to: '/volunteer/feedback',  label: 'Feedback', icon: <UploadCloud className="w-4 h-4" /> },
+];
+
 export default function Navbar() {
   const { isDark, toggleTheme } = useTheme();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
   const navigate = useNavigate();
   const isLanding = location.pathname === '/';
+  const userRole = localStorage.getItem('userRole');
+  const isVolunteer = userRole === 'volunteer';
+  const isLogin = location.pathname.includes('/login');
   
-  const activeLinks = isLanding ? LANDING_LINKS : DASHBOARD_LINKS;
+  let activeLinks = DASHBOARD_LINKS;
+  if (isLanding) {
+    activeLinks = LANDING_LINKS;
+  } else if (isVolunteer) {
+    activeLinks = VOLUNTEER_LINKS;
+  }
 
-  const isLogin = location.pathname === '/login';
+
 
   if (isLogin) {
     return (
@@ -146,7 +160,7 @@ export default function Navbar() {
     {!isLanding && (
       <div className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-nx-bg-surface/90 backdrop-blur-xl border-t border-nx-border-default shadow-[0_-4px_24px_-8px_rgba(0,0,0,0.3)] pb-safe">
         <div className="flex items-center justify-around h-16 px-2">
-          {DASHBOARD_LINKS.map(({ to, label, icon }) => (
+          {activeLinks.map(({ to, label, icon }) => (
             <NavLink
               key={to}
               to={to}
