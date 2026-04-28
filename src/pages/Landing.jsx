@@ -379,43 +379,99 @@ export default function Landing() {
         }
       `}</style>
 
-      {/* Video Modal */}
+      {/* Video Modal — Cinematic Redesign */}
       <AnimatePresence>
         {isVideoOpen && (
-          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
-              exit={{ opacity: 0 }} 
-              className="absolute inset-0 bg-nx-bg-base/90 backdrop-blur-sm cursor-pointer"
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8">
+
+            {/* Backdrop */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="absolute inset-0 cursor-pointer"
+              style={{ background: 'rgba(4,8,18,0.92)', backdropFilter: 'blur(16px)' }}
               onClick={() => setIsVideoOpen(false)}
             />
-            <motion.div 
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+
+            {/* Modal Card */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.88, y: 40 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="relative w-full max-w-5xl bg-nx-bg-surface border border-nx-border-strong rounded-2xl shadow-modal overflow-hidden z-10"
+              exit={{ opacity: 0, scale: 0.88, y: 40 }}
+              transition={{ type: 'spring', stiffness: 300, damping: 28 }}
+              className="relative w-full max-w-5xl z-10"
+              style={{
+                borderRadius: '20px',
+                boxShadow: '0 0 0 1px rgba(99,120,255,0.25), 0 40px 120px rgba(0,0,0,0.7), 0 0 80px rgba(99,120,255,0.12)',
+              }}
             >
-              <div className="flex items-center justify-between p-4 border-b border-nx-border-subtle bg-nx-bg-elevated/50">
-                <div className="flex items-center gap-2">
-                  <PlayCircle className="w-5 h-5 text-nx-accent-primary" />
-                  <span className="font-bold text-nx-text-primary">NexusAid Platform Overview</span>
+              {/* Glow ring */}
+              <div style={{
+                position: 'absolute', inset: '-1px', borderRadius: '21px',
+                background: 'linear-gradient(135deg, rgba(99,120,255,0.4) 0%, transparent 50%, rgba(6,182,212,0.2) 100%)',
+                zIndex: -1, pointerEvents: 'none',
+              }} />
+
+              {/* Header */}
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                padding: '14px 20px',
+                background: 'linear-gradient(90deg, rgba(99,120,255,0.12) 0%, rgba(4,8,18,0.6) 100%)',
+                borderBottom: '1px solid rgba(99,120,255,0.18)',
+                borderRadius: '20px 20px 0 0',
+                backdropFilter: 'blur(10px)',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  {/* Dot indicators */}
+                  <div style={{ display:'flex', gap:'6px' }}>
+                    <button onClick={() => setIsVideoOpen(false)} style={{ width:13, height:13, borderRadius:'50%', background:'#ff5f57', border:'none', cursor:'pointer' }} />
+                    <div style={{ width:13, height:13, borderRadius:'50%', background:'#febc2e' }} />
+                    <div style={{ width:13, height:13, borderRadius:'50%', background:'#28c840' }} />
+                  </div>
+                  <span style={{ width:'1px', height:'18px', background:'rgba(255,255,255,0.1)', display:'block', marginLeft:'4px' }} />
+                  <PlayCircle style={{ width:16, height:16, color:'rgba(99,120,255,0.9)' }} />
+                  <span style={{ fontWeight:700, fontSize:'14px', color:'rgba(255,255,255,0.9)', letterSpacing:'0.02em' }}>
+                    NexusAid · Platform Demo
+                  </span>
                 </div>
-                <button 
+                <button
                   onClick={() => setIsVideoOpen(false)}
-                  className="p-2 rounded-lg text-nx-text-secondary hover:text-nx-crimson hover:bg-nx-crimson-subtle transition-colors"
+                  style={{
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    width:32, height:32, borderRadius:'8px', border:'1px solid rgba(255,255,255,0.1)',
+                    background:'rgba(255,255,255,0.05)', cursor:'pointer', color:'rgba(255,255,255,0.5)',
+                    transition:'all 0.2s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background='rgba(220,38,38,0.15)'; e.currentTarget.style.color='#ff5f57'; e.currentTarget.style.borderColor='rgba(220,38,38,0.3)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background='rgba(255,255,255,0.05)'; e.currentTarget.style.color='rgba(255,255,255,0.5)'; e.currentTarget.style.borderColor='rgba(255,255,255,0.1)'; }}
                 >
-                  <X className="w-5 h-5" />
+                  <X style={{ width:16, height:16 }} />
                 </button>
               </div>
-              <div className="aspect-video bg-black relative flex items-center justify-center overflow-hidden">
-                <iframe
-                  src="https://drive.google.com/file/d/1DnYIoBJctVKuM_pVD-aohVCnLJiYimkU/preview?autoplay=1"
-                  allow="autoplay; fullscreen"
-                  allowFullScreen
-                  className="w-full h-full border-0"
-                  title="NexusAid Platform Demo"
-                />
+
+              {/* Video — direct stream, no sign-in, true autoplay */}
+              <div style={{ position:'relative', paddingBottom:'56.25%', background:'#000', borderRadius:'0 0 20px 20px', overflow:'hidden' }}>
+                <video
+                  key={isVideoOpen ? 'open' : 'closed'}
+                  autoPlay
+                  controls
+                  playsInline
+                  style={{ position:'absolute', inset:0, width:'100%', height:'100%', objectFit:'contain' }}
+                >
+                  <source
+                    src="https://drive.google.com/uc?export=download&id=1DnYIoBJctVKuM_pVD-aohVCnLJiYimkU"
+                    type="video/mp4"
+                  />
+                  Your browser does not support the video tag.
+                </video>
+                {/* Bottom gradient polish */}
+                <div style={{
+                  position:'absolute', bottom:0, left:0, right:0, height:'60px',
+                  background:'linear-gradient(to top, rgba(4,8,18,0.5), transparent)',
+                  pointerEvents:'none', borderRadius:'0 0 20px 20px',
+                }} />
               </div>
             </motion.div>
           </div>
