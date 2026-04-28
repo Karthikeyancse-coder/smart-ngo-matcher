@@ -409,17 +409,13 @@ export default function Landing() {
                 </button>
               </div>
               <div className="aspect-video bg-black relative flex items-center justify-center overflow-hidden">
-                <video
-                  src="/demo.mp4"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  controls
-                  className="w-full h-full object-contain"
-                >
-                  Your browser does not support the video tag.
-                </video>
+                <iframe
+                  src="https://drive.google.com/file/d/1DnYIoBJctVKuM_pVD-aohVCnLJiYimkU/preview?autoplay=1"
+                  allow="autoplay; fullscreen"
+                  allowFullScreen
+                  className="w-full h-full border-0"
+                  title="NexusAid Platform Demo"
+                />
               </div>
             </motion.div>
           </div>
